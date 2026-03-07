@@ -1,20 +1,22 @@
 services:
   api:
-    build: ./backend/VaultAuth.Api
+    build:
+      context: ./backend
+      dockerfile: VaultAuth.Api/Dockerfile
     ports:
       - "5000:5000"
     depends_on:
       - db
     environment:
-      - ConnectionStrings__Default=Host=db;Database=vaultauth;Username=Jeliane101;Password=Jeliane@123#!
+      ConnectionStrings__Default: Host=db;Port=5432;Database=vaultauth;Username=Jeliane101;Password=Jeliane@123#!
 
   db:
     image: postgres:15
     container_name: vaultauth_db
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: Jeliane101
+      POSTGRES_PASSWORD: Jeliane@123#!
       POSTGRES_DB: vaultauth
     ports:
       - "5432:5432"
