@@ -32,7 +32,7 @@ namespace VaultAuth.Api.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterRequest request)
+        public async Task<IActionResult> Register([FromForm] RegisterRequest request, IFormFile? profileImage)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -44,17 +44,49 @@ namespace VaultAuth.Api.Controllers
             {
                 FirstName = request.FirstName,
                 LastName = request.LastName,
-                Email = request.Email
+                Email = request.Email,
+                
             };
-
             user.HashedPassword = _passwordService.HashPassword(user, request.Password);
+
+            // Profile image upload to local file system
+            if (profileImage != null && profileImage.Length > 0)
+            {
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                var extension = Path.GetExtension(profileImage.FileName).ToLowerInvariant();
+
+                if (!allowedExtensions.Contains(extension))
+                    return BadRequest("Invalid file type. Only .jpg and .png are allowed.");
+
+                const long maxFileSize = 2 * 1024 * 1024; 
+                if (profileImage.Length > maxFileSize)
+                    return BadRequest("File too large. Maximum allowed size is 2 MB.");
+
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                var fileName = $"{Guid.NewGuid()}{extension}";
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await profileImage.CopyToAsync(stream);
+                }
+
+                user.ImageURL = $"/images/{fileName}";
+            }
+            else
+            {
+                user.ImageURL = "/images/default.png";
+            }
+
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new RegisterResponse());
+            return Ok(new RegisterResponse { Message = "User registered successfully." });
         }
-
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
@@ -141,8 +173,6 @@ namespace VaultAuth.Api.Controllers
             return Ok(new { message = "Logged out successfully." });
         }
 
-
-
         [HttpPost("request-reset")]
         public async Task<IActionResult> RequestPasswordReset([FromBody] string email)
         {
@@ -190,10 +220,56 @@ namespace VaultAuth.Api.Controllers
             return Ok(new
             {
                 user.ID,
+                user.FirstName,
+                user.LastName,
                 user.Email,
+                user.ImageURL,
                 user.RefreshTokenExpiry
             });
         }
+
+        [Authorize]
+        [HttpPut("update")]
+        public async Task<IActionResult> UpdateUser([FromForm] UpdateUser dto, IFormFile? profileImage)
+        {
+            var userIdClaim = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized(new { message = "Invalid token." });
+
+            var userId = int.Parse(userIdClaim);
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return NotFound(new { message = "User not found." });
+
+            // Update only provided fields
+            if (!string.IsNullOrEmpty(dto.Email)) user.Email = dto.Email;
+            if (!string.IsNullOrEmpty(dto.FirstName)) user.FirstName = dto.FirstName;
+            if (!string.IsNullOrEmpty(dto.LastName)) user.LastName = dto.LastName;
+
+            // Profile image upload to local file system
+            if (profileImage != null && profileImage.Length > 0)
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                var fileName = $"{Guid.NewGuid()}_{profileImage.FileName}";
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await profileImage.CopyToAsync(stream);
+                }
+
+                // Save URL to DB
+                user.ImageURL = $"/images/{fileName}";
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "User updated successfully." });
+        }
+
+
 
 
 
