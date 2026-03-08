@@ -24,6 +24,9 @@ namespace VaultAuth.Api.Models
         public string? ResetPasswordToken { get; set; }
         public DateTime? ResetPasswordTokenExpiry { get; set; }
         public string? ImageURL { get; set; }
+        public string? RefreshToken { get; set; }
+
+        public DateTime? RefreshTokenExpiry { get; set; }
 
     }
 }

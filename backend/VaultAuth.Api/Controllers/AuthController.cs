@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -20,12 +21,14 @@ namespace VaultAuth.Api.Controllers
         private readonly AppDbContext _context;
         private readonly IPasswordService _passwordService;
         private readonly IConfiguration _configuration;
+        private readonly TokenService _tokenService;
 
-        public AuthController(AppDbContext context, IPasswordService passwordService, IConfiguration configuration)
+        public AuthController(AppDbContext context, IPasswordService passwordService, IConfiguration configuration, TokenService tokenService)
         {
             _context = context;
             _passwordService = passwordService;
             _configuration = configuration;
+            _tokenService = tokenService;
         }
 
         [HttpPost("register")]
@@ -89,25 +92,56 @@ namespace VaultAuth.Api.Controllers
             user.LockoutEnd = null;
             await _context.SaveChangesAsync();
 
-            // JWT generation logic here...
-            var claims = new[]
-            {
-        new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-        new Claim("userId", user.ID.ToString())
-    };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var accessToken = _tokenService.GenerateAccessToken(user);
+            var refreshToken = _tokenService.GenerateRefreshToken();
 
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Issuer"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
-                signingCredentials: creds);
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(int.Parse(_configuration["Jwt:RefreshTokenExpiryDays"]));
+            await _context.SaveChangesAsync();
 
-            return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
+            return Ok(new { accessToken, refreshToken });
         }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh(TokenDto dto)
+        {
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.RefreshToken == dto.RefreshToken);
+            if (user == null || user.RefreshTokenExpiry < DateTime.UtcNow)
+                return Unauthorized(new { message = "Invalid or expired refresh token." });
+
+            var newAccessToken = _tokenService.GenerateAccessToken(user);
+            var newRefreshToken = _tokenService.GenerateRefreshToken();
+
+            user.RefreshToken = newRefreshToken;
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(int.Parse(_configuration["Jwt:RefreshTokenExpiryDays"]));
+            await _context.SaveChangesAsync();
+
+            return Ok(new { accessToken = newAccessToken, refreshToken = newRefreshToken });
+        }
+
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            var userIdClaim = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized(new { message = "Invalid token." });
+
+            var userId = int.Parse(userIdClaim); 
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return NotFound(new { message = "User not found." });
+
+            user.RefreshToken = null;
+            user.RefreshTokenExpiry = null;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Logged out successfully." });
+        }
+
+
 
         [HttpPost("request-reset")]
         public async Task<IActionResult> RequestPasswordReset([FromBody] string email)
@@ -141,6 +175,25 @@ namespace VaultAuth.Api.Controllers
             return Ok(new { message = "The password reset successfully." });
         }
 
+        [Authorize]
+        [HttpGet("profile")]
+        public async Task<IActionResult> GetProfile()
+        {
+            var userId = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "Invalid token." });
+
+            var user = await _context.Users.FindAsync(int.Parse(userId));
+            if (user == null)
+                return NotFound(new { message = "User not found." });
+
+            return Ok(new
+            {
+                user.ID,
+                user.Email,
+                user.RefreshTokenExpiry
+            });
+        }
 
 
 
