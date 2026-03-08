@@ -173,37 +173,20 @@ namespace VaultAuth.Api.Controllers
             return Ok(new { message = "Logged out successfully." });
         }
 
-        [HttpPost("request-reset")]
-        public async Task<IActionResult> RequestPasswordReset([FromBody] string email)
+        [HttpPost("update-password")]
+        public async Task<IActionResult> UpdatePassword([FromBody] UpdatePassword dto)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-            if (user == null)
-                return NotFound(new { message = "User not found." });
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            if (user == null) return BadRequest("User not found");
 
-            user.ResetPasswordToken = Guid.NewGuid().ToString();
-            user.ResetPasswordTokenExpiry = DateTime.UtcNow.AddMinutes(10); // valid for 10 minutes
+            // Hash the new password
+            user.HashedPassword = _passwordService.HashPassword(user, dto.NewPassword);
 
             await _context.SaveChangesAsync();
-
-            // In production: send via email
-            return Ok(new { token = user.ResetPasswordToken });
+            return Ok("Password updated successfully");
         }
 
-        [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword(string token, string newPassword)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.ResetPasswordToken == token);
-            if (user == null || user.ResetPasswordTokenExpiry < DateTime.UtcNow)
-                return BadRequest(new { message = "Invalid or expired token." });
 
-            user.HashedPassword = _passwordService.HashPassword(user, newPassword);
-            user.ResetPasswordToken = null;
-            user.ResetPasswordTokenExpiry = null;
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "The password reset successfully." });
-        }
 
         [Authorize]
         [HttpGet("profile")]
