@@ -101,7 +101,12 @@ namespace VaultAuth.Api.Controllers
             // Check if account is locked
             if (user.LockoutEnd.HasValue && user.LockoutEnd > DateTime.UtcNow)
             {
-                return Unauthorized(new { message = "Account is temporarily locked. Please try again later." });
+
+                return Unauthorized(new
+                {
+                    message = "Account is temporarily locked. Please try again later.",
+                    lockoutEnd = user.LockoutEnd 
+                });
             }
 
             var isValid = _passwordService.VerifyPassword(user, request.Password);
@@ -111,19 +116,21 @@ namespace VaultAuth.Api.Controllers
 
                 if (user.FailedLognAtp >= 3)
                 {
-                    user.LockoutEnd = DateTime.UtcNow.AddMinutes(15); // lock for 15 minutes
-                    user.FailedLognAtp = 0; // reset counter after lock
+                    user.LockoutEnd = DateTime.UtcNow.AddMinutes(15);
+                    user.FailedLognAtp = 0;
+                    await _context.SaveChangesAsync();
+
+                    return Unauthorized(new { message = "Account is temporarily locked.", lockoutEnd = user.LockoutEnd });
                 }
 
                 await _context.SaveChangesAsync();
-                return Unauthorized(new { message = "Invalid email or password." });
+                return Unauthorized(new { message = "Invalid email or password." }); 
             }
 
             // Reset failed attempts on success
             user.FailedLognAtp = 0;
             user.LockoutEnd = null;
             await _context.SaveChangesAsync();
-
 
             var accessToken = _tokenService.GenerateAccessToken(user);
             var refreshToken = _tokenService.GenerateRefreshToken();
@@ -134,6 +141,7 @@ namespace VaultAuth.Api.Controllers
 
             return Ok(new { accessToken, refreshToken });
         }
+
 
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh(TokenDto dto)
@@ -185,8 +193,6 @@ namespace VaultAuth.Api.Controllers
             await _context.SaveChangesAsync();
             return Ok("Password updated successfully");
         }
-
-
 
         [Authorize]
         [HttpGet("profile")]

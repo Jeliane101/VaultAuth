@@ -1,0 +1,87 @@
+body {
+  background: url("../assets/vaultauth-bg.jpg") no-repeat center center fixed;
+  background-size: cover;
+  font-family: Arial, sans-serif;
+}
+
+.forgot-container {
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  text-align: center;
+}
+
+.logo {
+  display: block;
+  margin: 0 auto 20px auto;
+  width: 120px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.required {
+  color: red;
+  margin-left: 4px;
+}
+
+input {
+  width: 250px;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper input {
+  width: 250px;
+  padding-right: 40px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+button {
+  width: 250px;
+  padding: 10px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+.success-message {
+  color: green;
+  margin-top: 10px;
+}
+
+.error-message {
+  color: red;
+  margin-top: 10px;
+}
