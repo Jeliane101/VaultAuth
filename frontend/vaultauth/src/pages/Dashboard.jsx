@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import logo from "../assets/vaultauth-logo1.png";
 import defaultAvatar from "../assets/default.png";
 import "../styles/dashboard.css";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+
+const handleEditProfile = () => {
+  navigate("/update-profile"); 
+};
+
   const [user, setUser] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -35,7 +42,6 @@ export default function Dashboard() {
   });
 } 
 else if (response.status === 401) {
-          // Token invalid or expired → redirect to login
           localStorage.removeItem("accessToken");
           window.location.href = "/login";
         } else {
@@ -49,10 +55,29 @@ else if (response.status === 401) {
     fetchProfile();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    window.location.href = "/login";
-  };
+const handleLogout = async () => {
+  try {
+    const token = localStorage.getItem("accessToken");
+
+    const response = await fetch("http://localhost:5000/api/auth/logout", {
+      method: "POST", // or "GET" if your endpoint is GET, but usually POST
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (response.ok) {
+      localStorage.removeItem("accessToken");
+      window.location.href = "/login";
+    } else {
+      console.error("Logout failed:", await response.json());
+    }
+  } catch (err) {
+    console.error("Error logging out:", err);
+  }
+};
+
 
   if (!user) {
     return <div>Loading profile...</div>;
@@ -93,7 +118,13 @@ else if (response.status === 401) {
             <p>First Name: {user.firstName}</p>
             <p>Last Name: {user.lastName}</p>
             <p>Email: {user.email}</p>
-            <button className="edit-profile-btn">Edit Profile</button>
+            <button 
+  className="edit-profile-btn" 
+  onClick={handleEditProfile}
+>
+  Edit Profile
+</button>
+
           </div>
         </div>
       </main>

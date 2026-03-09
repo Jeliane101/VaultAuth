@@ -4,7 +4,7 @@ import "../styles/login.css";
 import logo from "../assets/vaultauth-logo1.png";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
-export default function LoginPage() {
+export default function LoginPage({ setToken }) {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -31,7 +31,7 @@ export default function LoginPage() {
         //Store tokens in localStorage
         localStorage.setItem("accessToken", data.accessToken);
         localStorage.setItem("refreshToken", data.refreshToken);
-
+        setToken(data.accessToken);
         setIsError(false);
         setMessage("Login successful! Redirecting...");
         setTimeout(() => navigate("/dashboard"), 1500);
