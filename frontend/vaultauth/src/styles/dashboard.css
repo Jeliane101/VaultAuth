@@ -10,8 +10,25 @@
   align-items: center;
   background: #1e2a38;
   color: white;
-  padding: 0.75rem 1.5rem;
+  padding: 0.4rem 1rem;   
+  height: auto;           
 }
+
+.header-left {
+  display: flex;
+  align-items: center;   
+  gap: 4px;              
+}
+
+
+
+.app-name {
+  font-weight: bold;
+  font-size: 1.2rem;
+  line-height: 1;        
+  display: inline-block; 
+}
+
 
 .dashboard-main {
   flex: 1;
@@ -25,4 +42,19 @@
   display: flex;
   align-items: center;
   gap: 2rem;
+}
+
+.profile-image {
+  width: 200px;       
+  height: 200px;      
+  object-fit: cover;  
+  border-radius: 50%; 
+  border: 2px solid #ccc; 
+}
+
+
+body {
+  background: no-repeat center center fixed;
+  background-size: cover;
+  font-family: Arial, sans-serif;
 }

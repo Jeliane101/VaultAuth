@@ -20,14 +20,21 @@ export default function Dashboard() {
         });
 
         if (response.ok) {
-          const data = await response.json();
-          setUser({
-            id: data.ID,
-            name: `${data.FirstName} ${data.LastName}`, // ✅ PascalCase keys
-            email: data.Email,
-            profileImage: data.ImageURL
-          });
-        } else if (response.status === 401) {
+  const data = await response.json();
+  console.log("Profile data:", data); 
+
+  setUser({
+    id: data.id,
+    firstName: data.firstName,   
+    lastName: data.lastName,
+    email: data.email,
+     profileImage: data.imageURL 
+    ? `http://localhost:5000${data.imageURL}` 
+    : null,
+    name: `${data.firstName} ${data.lastName}` 
+  });
+} 
+else if (response.status === 401) {
           // Token invalid or expired → redirect to login
           localStorage.removeItem("accessToken");
           window.location.href = "/login";
@@ -64,7 +71,7 @@ export default function Dashboard() {
             className="user-name"
             onClick={() => setShowMenu(!showMenu)}
           >
-            {user.name}
+            {user.name} 
           </span>
           {showMenu && (
             <div className="dropdown-menu">
@@ -78,13 +85,14 @@ export default function Dashboard() {
       <main className="dashboard-main">
         <div className="profile-section">
           <img
-            src={user.profileImage || defaultAvatar}
-            alt="Profile"
-            className="profile-image"
-          />
+  src={user.profileImage || defaultAvatar}
+  alt="Profile"
+  className="profile-image"
+/>
           <div className="profile-info">
-            <h2>{user.name}</h2>
-            <p>{user.email}</p>
+            <p>First Name: {user.firstName}</p>
+            <p>Last Name: {user.lastName}</p>
+            <p>Email: {user.email}</p>
             <button className="edit-profile-btn">Edit Profile</button>
           </div>
         </div>
