@@ -168,9 +168,9 @@ Integration tests for API endpoints.
 
 Author
 
-Developed by Jeliane for the Wonga Intermediate Developer Assessment.
+Developed by Jeliane Awung for the Wonga Intermediate Developer Assessment.
 
-&nbsp;
+
 
 
 
