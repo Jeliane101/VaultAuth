@@ -29,37 +29,40 @@ const [showHint, setShowHint] = useState(false);
     setFormData({ ...formData, profileImage: e.target.files[0] });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-    const data = new FormData();
-    data.append("FirstName", formData.firstName);
-    data.append("LastName", formData.lastName);
-    data.append("Email", formData.email);
-    data.append("Password", formData.password);
-    if (formData.profileImage) {
-      data.append("ProfileImage", formData.profileImage);
-    }
+        const data = new FormData();
+        data.append("FirstName", formData.firstName);
+        data.append("LastName", formData.lastName);
+        data.append("Email", formData.email);
+        data.append("Password", formData.password);
+        if (formData.profileImage) {
+            data.append("ProfileImage", formData.profileImage);
+        }
 
-    try {
-      const response = await fetch("http://localhost:5000/api/auth/register", {
-        method: "POST",
-        body: data
-      });
+        try {
+            const response = await fetch("http://localhost:5000/api/auth/register", {
+                method: "POST",
+                body: data
+            });
 
-      if (response.ok) {
-        setIsError(false);
-        setMessage("Registration successful! Redirecting to login...");
-        setTimeout(() => navigate("/login"), 2000);
-      } else {
-        setIsError(true);
-        setMessage("Registration failed. Please try again.");
-      }
-    } catch (error) {
-      setIsError(true);
-      setMessage("Something went wrong. Please try again later.");
-    }
-  };
+            const result = await response.json();
+
+            if (response.ok) {
+                setIsError(false);
+                setMessage(result.message || "Registration successful! Redirecting to login...");
+                setTimeout(() => navigate("/login"), 2000);
+            } else {
+                setIsError(true);
+                setMessage(result.message || "Registration failed. Please try again.");
+            }
+        } catch (error) {
+            setIsError(true);
+            setMessage("Something went wrong. Please try again later.");
+        }
+    };
+
 
   return (
     <div className="register-container">

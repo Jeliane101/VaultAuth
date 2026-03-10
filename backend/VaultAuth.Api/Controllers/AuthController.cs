@@ -230,6 +230,16 @@ namespace VaultAuth.Api.Controllers
             if (user == null)
                 return NotFound(new { message = "User not found." });
 
+            // Check that Email doesnt already exist.
+            if (!string.IsNullOrEmpty(dto.Email))
+            {
+                bool emailExists = _context.Users.Any(u => u.Email == dto.Email && u.ID != user.ID);
+                if (emailExists)
+                    return BadRequest(new { message = "This email address is already in use. Please try another one." });
+
+                user.Email = dto.Email;
+            }
+
             // Update only provided fields
             if (!string.IsNullOrEmpty(dto.Email)) user.Email = dto.Email;
             if (!string.IsNullOrEmpty(dto.FirstName)) user.FirstName = dto.FirstName;
@@ -254,8 +264,23 @@ namespace VaultAuth.Api.Controllers
                 user.ImageURL = $"/images/{fileName}";
             }
 
-            await _context.SaveChangesAsync();
-            return Ok(new { message = "User updated successfully." });
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "User updated successfully." });
+            }
+            catch (DbUpdateException ex)
+            {
+                // Check if it's a unique constraint violation
+                if (ex.InnerException?.Message.Contains("IX_Users_Email") == true)
+                {
+                    return BadRequest(new { message = "This email address is already in use. Please try another one." });
+                }
+
+                // Fallback for other DB errors
+                return StatusCode(500, new { message = "An unexpected error occurred while updating the user." });
+            }
+
         }
 
 
