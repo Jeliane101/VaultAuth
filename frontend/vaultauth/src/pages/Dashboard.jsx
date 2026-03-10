@@ -60,7 +60,7 @@ const handleLogout = async () => {
     const token = localStorage.getItem("accessToken");
 
     const response = await fetch("http://localhost:5000/api/auth/logout", {
-      method: "POST", // or "GET" if your endpoint is GET, but usually POST
+      method: "POST", 
       headers: {
         "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json"
