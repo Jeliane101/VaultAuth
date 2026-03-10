@@ -13,4 +13,6 @@ namespace VaultAuth.Api.DTOs
         [MinLength(8)]
         public string Password { get; set; } = string.Empty;
     }
+
+
 }
